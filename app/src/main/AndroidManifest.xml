@@ -48,6 +48,7 @@
             android:exported="true"
             android:resizeableActivity="true"
             android:maxAspectRatio="3.0"
+            android:excludeFromRecents="true"
             android:configChanges="screenSize|orientation|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
