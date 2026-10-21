@@ -28,10 +28,13 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,6 +49,7 @@ public class MainActivity extends Activity {
             "Language", "语言", "語言", "Langue", "言語", "언어", "Idioma", "Idioma", "Sprache", "Язык"
     };
     private static final long LANGUAGE_LABEL_INTERVAL_MS = 2200L;
+    private static final int[] INTERVAL_VALUES = {1, 2, 3, 5, 10, 15, 30};
 
     private EditText keyEdit;
     private EditText itemEdit;
@@ -58,10 +62,12 @@ public class MainActivity extends Activity {
     private Button scanFcmAppsBtn;
     private Switch protectionSwitch;
     private Switch notificationSwitch;
+    private Spinner intervalSpinner;
     private Button permissionBtn;
     private RadioGroup appearanceGroup;
     private boolean suppressSwitchCallbacks = false;
     private boolean suppressAppearanceCallbacks = false;
+    private boolean suppressIntervalCallbacks = false;
     private boolean notificationAccessPending = false;
     private boolean fcmListExpanded = false;
     private List<FcmAppScanner.AppEntry> scannedFcmApps;
@@ -105,6 +111,7 @@ public class MainActivity extends Activity {
         setupLanguagePicker();
         setupAppearance();
         setupSwitches();
+        setupIntervalSpinner();
         bindActions();
         refreshStatus(null);
     }
@@ -152,6 +159,7 @@ public class MainActivity extends Activity {
         scanFcmAppsBtn = findViewById(R.id.scanFcmAppsBtn);
         protectionSwitch = findViewById(R.id.protectionSwitch);
         notificationSwitch = findViewById(R.id.notificationSwitch);
+        intervalSpinner = findViewById(R.id.intervalSpinner);
         permissionBtn = findViewById(R.id.permissionBtn);
         appearanceGroup = findViewById(R.id.appearanceGroup);
     }
@@ -316,6 +324,44 @@ public class MainActivity extends Activity {
             }
             if (SettingsGuard.isProtectionEnabled(this)) startProtectionService();
             refreshStatus(null);
+        });
+    }
+
+    private void setupIntervalSpinner() {
+        if (intervalSpinner == null) return;
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.interval_labels, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        intervalSpinner.setAdapter(adapter);
+
+        int currentMinutes = SettingsGuard.getCheckIntervalMinutes(this);
+        int selectedIndex = 3; // default: 5 min
+        for (int i = 0; i < INTERVAL_VALUES.length; i++) {
+            if (INTERVAL_VALUES[i] == currentMinutes) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        suppressIntervalCallbacks = true;
+        intervalSpinner.setSelection(selectedIndex);
+        suppressIntervalCallbacks = false;
+
+        intervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (suppressIntervalCallbacks) return;
+                if (position >= 0 && position < INTERVAL_VALUES.length) {
+                    int chosenMinutes = INTERVAL_VALUES[position];
+                    SettingsGuard.setCheckIntervalMinutes(MainActivity.this, chosenMinutes);
+                    if (SettingsGuard.isProtectionEnabled(MainActivity.this)) {
+                        startProtectionService();
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 

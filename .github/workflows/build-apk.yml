@@ -87,6 +87,7 @@ jobs:
       # Feature branches validate the APK; only main publishes or refreshes Releases.
       - name: Publish APKs to GitHub Release
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}

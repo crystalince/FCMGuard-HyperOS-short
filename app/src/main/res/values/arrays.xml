@@ -13,4 +13,14 @@
         <item>Deutsch</item>
         <item>Русский</item>
     </string-array>
+
+    <string-array name="interval_labels">
+        <item>@string/interval_1_min</item>
+        <item>@string/interval_2_min</item>
+        <item>@string/interval_3_min</item>
+        <item>@string/interval_5_min</item>
+        <item>@string/interval_10_min</item>
+        <item>@string/interval_15_min</item>
+        <item>@string/interval_30_min</item>
+    </string-array>
 </resources>

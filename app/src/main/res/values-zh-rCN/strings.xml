@@ -23,6 +23,15 @@
     <string name="automatic_protection_summary">仅监听 FCM 白名单这一项的变化，主要采用事件触发；30 分钟兜底检查不会主动唤醒休眠中的手机。</string>
     <string name="persistent_notification">常驻通知</string>
     <string name="persistent_notification_summary">建议开启以获得最高可靠性。关闭后会移除通知并切换为纯后台模式，但 HyperOS 更容易终止该服务。</string>
+    <string name="check_interval_title">检查与心跳间隔</string>
+    <string name="check_interval_summary">使用系统底层定时器定期唤醒检查白名单，并发送 FCM 心跳广播以防网络断连假死。</string>
+    <string name="interval_1_min">1 分钟</string>
+    <string name="interval_2_min">2 分钟</string>
+    <string name="interval_3_min">3 分钟</string>
+    <string name="interval_5_min">5 分钟（默认）</string>
+    <string name="interval_10_min">10 分钟</string>
+    <string name="interval_15_min">15 分钟</string>
+    <string name="interval_30_min">30 分钟</string>
     <string name="actions_title">工具</string>
     <string name="advanced_title">高级配置</string>
 

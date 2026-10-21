@@ -10,6 +10,8 @@ public final class SettingsGuard {
     public static final String PREFS = "guard_state";
     public static final String PREF_ENABLED = "enabled";
     public static final String PREF_PERSISTENT_NOTIFICATION = "persistent_notification";
+    public static final String PREF_CHECK_INTERVAL_MINUTES = "check_interval_minutes";
+    public static final int DEFAULT_CHECK_INTERVAL_MINUTES = 5;
     private static final String LAST_GOOD_PREFIX = "last_good_";
 
     private SettingsGuard() {}
@@ -42,6 +44,16 @@ public final class SettingsGuard {
     public static void setPersistentNotification(Context context, boolean enabled) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putBoolean(PREF_PERSISTENT_NOTIFICATION, enabled).apply();
+    }
+
+    public static int getCheckIntervalMinutes(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getInt(PREF_CHECK_INTERVAL_MINUTES, DEFAULT_CHECK_INTERVAL_MINUTES);
+    }
+
+    public static void setCheckIntervalMinutes(Context context, int minutes) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putInt(PREF_CHECK_INTERVAL_MINUTES, minutes).apply();
     }
 
     public static void saveConfig(Context context, String key, String requiredItem) {

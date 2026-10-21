@@ -23,6 +23,15 @@
     <string name="automatic_protection_summary">Event-driven monitoring of only the FCM whitelist key. A non-waking 30-minute fallback check is used only as insurance.</string>
     <string name="persistent_notification">Persistent notification</string>
     <string name="persistent_notification_summary">Recommended ON for maximum reliability. Turn it OFF to remove the ongoing notification and use background-only mode; HyperOS may then stop the service more easily.</string>
+    <string name="check_interval_title">Check &amp; Heartbeat interval</string>
+    <string name="check_interval_summary">Uses AlarmManager to wake up and check whitelist, and sends FCM heartbeats to keep the connection alive.</string>
+    <string name="interval_1_min">1 minute</string>
+    <string name="interval_2_min">2 minutes</string>
+    <string name="interval_3_min">3 minutes</string>
+    <string name="interval_5_min">5 minutes (Default)</string>
+    <string name="interval_10_min">10 minutes</string>
+    <string name="interval_15_min">15 minutes</string>
+    <string name="interval_30_min">30 minutes</string>
     <string name="actions_title">Tools</string>
     <string name="advanced_title">Advanced configuration</string>
 

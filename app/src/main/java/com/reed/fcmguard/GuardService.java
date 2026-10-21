@@ -1,39 +1,40 @@
 package com.reed.fcmguard;
 
 import android.Manifest;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 
 public class GuardService extends Service {
+    public static final String ACTION_ALARM_CHECK = "com.reed.fcmguard.ACTION_ALARM_CHECK";
     // v2 intentionally uses a new channel id. Android does not allow an app to raise
     // an existing channel from IMPORTANCE_MIN to IMPORTANCE_LOW after creation.
     private static final String CHANNEL_ID = "fcm_guard_persistent_v2";
     private static final int NOTIFICATION_ID = 426;
-    private static final long FALLBACK_INTERVAL_MS = 30L * 60L * 1000L;
+    private static final int ALARM_REQUEST_CODE = 4260;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ContentObserver observer;
+    private BroadcastReceiver eventReceiver;
     private boolean foreground;
-
-    private final Runnable fallbackCheck = new Runnable() {
-        @Override public void run() {
-            repair(false);
-            handler.postDelayed(this, FALLBACK_INTERVAL_MS);
-        }
-    };
 
     private final Runnable repairDebounced = new Runnable() {
         @Override public void run() {
@@ -45,26 +46,78 @@ public class GuardService extends Service {
         super.onCreate();
         applyExecutionMode();
         registerObserver();
+        registerEventReceiver();
         SettingsGuard.rememberIfUseful(this);
-        handler.post(fallbackCheck);
+        scheduleNextAlarm();
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && ACTION_ALARM_CHECK.equals(intent.getAction())) {
+            if (SettingsGuard.isProtectionEnabled(this)) {
+                repair(false);
+                scheduleNextAlarm();
+            }
+            return START_STICKY;
+        }
+
         SettingsGuard.setProtectionEnabled(this, true);
         registerObserver();
+        registerEventReceiver();
         applyExecutionMode();
-        handler.removeCallbacks(fallbackCheck);
-        handler.post(fallbackCheck);
+        repair(false);
+        scheduleNextAlarm();
         return START_STICKY;
     }
 
     private void repair(boolean notifyFailure) {
         SettingsGuard.Result result = SettingsGuard.repair(this);
+        // Periodically ping FCM/MCS heartbeats to prevent carrier NAT timeouts
+        FcmReconnect.kick(this);
         if (result.changed) {
-            FcmReconnect.kick(this);
             if (foreground) refreshNotification(getString(R.string.notification_repaired));
         } else if (!result.success && notifyFailure && foreground) {
             refreshNotification(result.message);
+        }
+    }
+
+    private void scheduleNextAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+
+        int intervalMinutes = SettingsGuard.getCheckIntervalMinutes(this);
+        long intervalMs = intervalMinutes * 60L * 1000L;
+        long triggerAt = SystemClock.elapsedRealtime() + intervalMs;
+
+        Intent intent = new Intent(this, GuardService.class).setAction(ACTION_ALARM_CHECK);
+        PendingIntent pi = PendingIntent.getService(
+                this,
+                ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pi);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            am.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pi);
+        } else {
+            am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pi);
+        }
+    }
+
+    private void cancelAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        Intent intent = new Intent(this, GuardService.class).setAction(ACTION_ALARM_CHECK);
+        PendingIntent pi = PendingIntent.getService(
+                this,
+                ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_NO_CREATE | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+        if (pi != null) {
+            am.cancel(pi);
+            pi.cancel();
         }
     }
 
@@ -85,6 +138,25 @@ public class GuardService extends Service {
                 false,
                 observer
         );
+    }
+
+    private void registerEventReceiver() {
+        if (eventReceiver != null) return;
+        eventReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                if (intent == null) return;
+                String action = intent.getAction();
+                if (Intent.ACTION_SCREEN_ON.equals(action) ||
+                        ConnectivityManager.CONNECTIVITY_ACTION.equals(action)) {
+                    handler.removeCallbacks(repairDebounced);
+                    handler.postDelayed(repairDebounced, 200L);
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(eventReceiver, filter);
     }
 
     private void applyExecutionMode() {
@@ -146,8 +218,12 @@ public class GuardService extends Service {
 
     @Override public void onDestroy() {
         handler.removeCallbacksAndMessages(null);
+        cancelAlarm();
         try {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
+        } catch (Throwable ignored) {}
+        try {
+            if (eventReceiver != null) unregisterReceiver(eventReceiver);
         } catch (Throwable ignored) {}
         super.onDestroy();
     }
