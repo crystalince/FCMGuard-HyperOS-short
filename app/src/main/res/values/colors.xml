@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#F4F6F8</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="surface_alt">#F0F3F7</color>
+    <color name="text_primary">#1F2328</color>
+    <color name="text_secondary">#68707D</color>
+    <color name="blue">#0B57D0</color>
+    <color name="green">#188038</color>
+    <color name="yellow">#F9AB00</color>
+    <color name="red">#D93025</color>
+    <color name="border">#E2E6EC</color>
+    <color name="chip_bg">#E8F0FE</color>
+    <color name="info_bg">#EEF4FF</color>
+    <color name="divider">#EDF0F3</color>
+
+    <!-- Translucent status/value accents used inside the floating status card. -->
+    <color name="status_value_blue_bg">#244285F4</color>
+    <color name="status_value_green_bg">#2434A853</color>
+    <color name="status_value_yellow_bg">#24FBBC04</color>
+    <color name="status_value_red_bg">#24EA4335</color>
+    <color name="status_value_purple_bg">#247E57C2</color>
+    <color name="status_value_neutral_bg">#181F2328</color>
+
+    <color name="hero_start">#EEE9FF</color>
+    <color name="hero_center">#F3F0FF</color>
+    <color name="hero_end">#EAF4FF</color>
+    <color name="hero_pill">#F2FFFFFF</color>
+    <color name="floating_border">#EEF2F7</color>
+    <color name="primary_fill">#0B57D0</color>
+    <color name="primary_pressed">#0849B8</color>
+    <color name="primary_disabled">#AFC7F2</color>
+    <color name="secondary_pressed">#E6EAF0</color>
+</resources>
